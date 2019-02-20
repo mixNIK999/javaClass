@@ -12,95 +12,75 @@ import java.lang.reflect.InvocationTargetException;
 import org.jetbrains.annotations.NotNull;
 
 public class Serialization {
-    public static void serialize(@NotNull Object object, OutputStream out) throws IOException {
+    public static void serialize(@NotNull Object object, OutputStream out) throws IOException, IllegalAccessException {
         try (var objectOut = new ObjectOutputStream(new BufferedOutputStream(out))) {
             Class<?> objectClass = object.getClass();
             for (Field field : objectClass.getDeclaredFields()) {
+                field.setAccessible(true);
 //                objectOut.writeObject(field);
                 Class<?> fieldType = field.getType();
-                switch (fieldType.getName()) {
-                    case "byte":
-                        objectOut.writeByte(field.getByte(object));
-                        break;
-                    case "char":
-                        objectOut.writeChar(field.getChar(object));
-                        break;
-                    case "short":
-                        objectOut.writeShort(field.getShort(object));
-                        break;
-                    case "int":
-                        objectOut.writeInt(field.getInt(object));
-                        break;
-                    case "long":
-                        objectOut.writeLong(field.getLong(object));
-                        break;
-                    case "float":
-                        objectOut.writeFloat(field.getFloat(object));
-                        break;
-                    case "double":
-                        objectOut.writeDouble(field.getDouble(object));
-                        break;
-                    case "boolean":
-                        objectOut.writeBoolean(field.getBoolean(object));
-                        break;
-                    default:
-                        objectOut.writeObject(field.get(object));
-                        break;
+                String s = fieldType.getName();
+                if ("byte".equals(s)) {
+                    objectOut.writeByte(field.getByte(object));
+                } else if ("char".equals(s)) {
+                    objectOut.writeChar(field.getChar(object));
+                } else if ("short".equals(s)) {
+                    objectOut.writeShort(field.getShort(object));
+                } else if ("int".equals(s)) {
+                    objectOut.writeInt(field.getInt(object));
+                } else if ("long".equals(s)) {
+                    objectOut.writeLong(field.getLong(object));
+                } else if ("float".equals(s)) {
+                    objectOut.writeFloat(field.getFloat(object));
+                } else if ("double".equals(s)) {
+                    objectOut.writeDouble(field.getDouble(object));
+                } else if ("boolean".equals(s)) {
+                    objectOut.writeBoolean(field.getBoolean(object));
+                } else {
+                    objectOut.writeObject(field.get(object));
                 }
             }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         }
     }
 
-    public static <T> T deserialize(InputStream in, @NotNull Class<T> objectClass) throws IOException {
+    public static <T> T deserialize(InputStream in, @NotNull Class<T> objectClass)
+        throws IOException, InstantiationException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
         T result = null;
-        try {
-            result = objectClass.getConstructor().newInstance();
-            try (var objectIn = new ObjectInputStream(new BufferedInputStream(in))) {
-                for (Field field : objectClass.getDeclaredFields()) {
-                    Class<?> fieldType = field.getType();
-                    switch (fieldType.getName()) {
-                        case "byte":
-                            field.setByte(result, objectIn.readByte());
-                            break;
-                        case "char":
-                            field.setChar(result, objectIn.readChar());
-                            break;
-                        case "short":
-                            field.setShort(result, objectIn.readShort());
-                            break;
-                        case "int":
-                            field.setInt(result, objectIn.readInt());
-                            break;
-                        case "long":
-                            field.setLong(result, objectIn.readLong());
-                            break;
-                        case "float":
-                            field.setFloat(result, objectIn.readFloat());
-                            break;
-                        case "double":
-                            field.setDouble(result, objectIn.readDouble());
-                            break;
-                        case "boolean":
-                            field.setBoolean(result, objectIn.readBoolean());
-                            break;
-                        default:
-                            field.set(result, objectIn.readObject());
-                            break;
-                    }
+        result = objectClass.getConstructor().newInstance();
+        try (var objectIn = new ObjectInputStream(new BufferedInputStream(in))) {
+            for (Field field : objectClass.getDeclaredFields()) {
+                field.setAccessible(true);
+                Class<?> fieldType = field.getType();
+                switch (fieldType.getName()) {
+                    case "byte":
+                        field.setByte(result, objectIn.readByte());
+                        break;
+                    case "char":
+                        field.setChar(result, objectIn.readChar());
+                        break;
+                    case "short":
+                        field.setShort(result, objectIn.readShort());
+                        break;
+                    case "int":
+                        field.setInt(result, objectIn.readInt());
+                        break;
+                    case "long":
+                        field.setLong(result, objectIn.readLong());
+                        break;
+                    case "float":
+                        field.setFloat(result, objectIn.readFloat());
+                        break;
+                    case "double":
+                        field.setDouble(result, objectIn.readDouble());
+                        break;
+                    case "boolean":
+                        field.setBoolean(result, objectIn.readBoolean());
+                        break;
+                    default:
+                        field.set(result, objectIn.readObject());
+                        break;
                 }
-            } catch (IllegalAccessException | ClassNotFoundException e) {
-                e.printStackTrace();
             }
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
         }
         return result;
     }

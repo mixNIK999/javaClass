@@ -3,6 +3,7 @@ package me.nikolyukin.cwReflection;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SerializationTest {
     private Structure base = new Structure();
 
-    private static class Structure {
+    public static class Structure {
         private byte byteField = 1;
         private char charField = 2;
         private short shortField = 3;
@@ -46,7 +47,8 @@ class SerializationTest {
     }
 
     @Test
-    void serializeDeserialize() throws IOException {
+    void serializeDeserialize()
+        throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException, ClassNotFoundException {
         try (var out = new ByteArrayOutputStream(1000)) {
             Serialization.serialize(base, out);
             byte[] data = out.toByteArray();
