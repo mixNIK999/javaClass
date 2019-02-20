@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij' version '0.4.2'
+}
+
+version '1.0'
+
+sourceCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile('org.jetbrains:annotations:16.0.2')
+    testCompile('org.junit.jupiter:junit-jupiter-api:5.3.2')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.3.2')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.addStringOption("charset", "UTF-8")
+}
+
+intellij {
+    version '2018.3.3'
+}
+patchPluginXml {
+    changeNotes """
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>"""
+}
