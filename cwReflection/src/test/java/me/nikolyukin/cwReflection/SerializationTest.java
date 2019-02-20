@@ -56,6 +56,12 @@ class SerializationTest {
                 assertEquals(base, Serialization.deserialize(in, Structure.class));
             }
         }
+    }
 
+    @Test
+    void deserializeWithException() throws IOException {
+        try (var in = new ByteArrayInputStream (new byte[0])){
+            assertThrows(IOException.class, () -> Serialization.deserialize(in, Structure.class));
+        }
     }
 }

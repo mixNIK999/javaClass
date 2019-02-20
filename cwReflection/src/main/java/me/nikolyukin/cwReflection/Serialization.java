@@ -17,7 +17,6 @@ public class Serialization {
             Class<?> objectClass = object.getClass();
             for (Field field : objectClass.getDeclaredFields()) {
                 field.setAccessible(true);
-//                objectOut.writeObject(field);
                 Class<?> fieldType = field.getType();
                 String s = fieldType.getName();
                 if ("byte".equals(s)) {
