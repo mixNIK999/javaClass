@@ -15,6 +15,7 @@ public class Serialization {
     public static void serialize(@NotNull Object object, OutputStream out) throws IOException, IllegalAccessException {
         try (var objectOut = new ObjectOutputStream(new BufferedOutputStream(out))) {
             Class<?> objectClass = object.getClass();
+//            serialize (super);
             for (Field field : objectClass.getDeclaredFields()) {
                 field.setAccessible(true);
                 Class<?> fieldType = field.getType();
