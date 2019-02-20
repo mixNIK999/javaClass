@@ -9,9 +9,10 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import org.jetbrains.annotations.NotNull;
 
 public class Serialization {
-    void serialize(Object object, OutputStream out) throws IOException {
+    public static void serialize(@NotNull Object object, OutputStream out) throws IOException {
         try (var objectOut = new ObjectOutputStream(new BufferedOutputStream(out))) {
             Class<?> objectClass = object.getClass();
             for (Field field : objectClass.getDeclaredFields()) {
@@ -52,7 +53,7 @@ public class Serialization {
         }
     }
 
-    <T> T deserialize(InputStream in, Class<T> objectClass) throws IOException {
+    public static <T> T deserialize(InputStream in, @NotNull Class<T> objectClass) throws IOException {
         T result = null;
         try {
             result = objectClass.getConstructor().newInstance();
