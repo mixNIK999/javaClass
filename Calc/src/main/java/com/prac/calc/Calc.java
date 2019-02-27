@@ -3,28 +3,46 @@ package com.prac.calc;
 import java.util.*;
 
 public class Calc {
-    private Stack<int> stack;
+    private Stack<Integer> stack;
 
-    public Cacl(Stack<Character> stack) {
+    public Calc(Stack<Integer> stack) {
         this.stack = stack;
     }
 
+    private boolean isOperation(String s) {
+        if (s.length() != 1) {
+            return false;
+        }
+        char op = s.charAt(0);
+        return op == '+' || op == '-' || op == '*' || op == '/';
+    }
+
     public int calculate(String s) {
-        int currentNum = 0;
-        for (String c : s.split(" ")) {
-            if (c.length() == 1) {
-                char op = c.charAt(0);
-                if (op == '+') {
-                    int first = stack.pop();
-                    int second = stack.pop();
-                    stack.push(first + second);
-                } else if (op == '-') {
-                    int
+        for (String current : s.split(" ")) {
+            if (isOperation(current)) {
+                char op = current.charAt(0);
+                int second = stack.pop();
+                int first = stack.pop();
+                switch (op) {
+                    case '+':
+                        stack.push(first + second);
+                        break;
+                    case '-':
+                        stack.push(first - second);
+                        break;
+                    case '*':
+                        stack.push(first * second);
+                        break;
+                    case '/':
+                        stack.push(first / second);
+                        break;
+                        default:
+                        throw new UnsupportedOperationException();
                 }
             } else {
-                currentNum = Integer.parseInt(c);
-                stack.push(currentNum);
+                stack.push(Integer.parseInt(current));
             }
         }
+        return stack.pop();
     }
 }
