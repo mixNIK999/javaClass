@@ -1,5 +1,6 @@
 package com.prac.calc;
 
+import java.security.*;
 import java.util.*;
 
 public class Calc {
@@ -15,7 +16,7 @@ public class Calc {
         }
         char op = s.charAt(0);
         return op == '+' || op == '-' || op == '*' || op == '/';
-    }   
+    }
 
     public int calculate(String s) {
         for (String current : s.split(" ")) {
@@ -42,6 +43,9 @@ public class Calc {
             } else {
                 stack.push(Integer.parseInt(current));
             }
+        }
+        if (stack.size() != 1) {
+            throw new InvalidParameterException();
         }
         return stack.pop();
     }
