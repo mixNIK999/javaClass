@@ -15,7 +15,7 @@ public class Calc {
         }
         char op = s.charAt(0);
         return op == '+' || op == '-' || op == '*' || op == '/';
-    }
+    }   
 
     public int calculate(String s) {
         for (String current : s.split(" ")) {
