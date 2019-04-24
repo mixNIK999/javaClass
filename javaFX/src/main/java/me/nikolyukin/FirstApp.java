@@ -1,49 +1,60 @@
 package me.nikolyukin;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.RowConstraints;
-import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
-public class FirstApp extends Application {
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        var button1 = new Button("Click me");
-        button1.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        button1.setOnAction(value -> Platform.exit());
 
-        var button2 = new Button("Or me");
-        button2.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        button2.setOnAction(value -> Platform.exit());
+public class FirstApp extends Application {
+    private int turn = 0;
+
+    @Override
+    public void start(Stage primaryStage) {
 
         var pane = new GridPane();
         pane.setGridLinesVisible(true);
 
-        var column1 = new ColumnConstraints();
+        int n = 3;
+        for (int i = 0; i < n; i++) {
+            var column = new ColumnConstraints();
+            column.setPercentWidth(100.0/n);
+            pane.getColumnConstraints().add(column);
 
-        column1.setPercentWidth(50);
-        var column2 = new ColumnConstraints();
-        column2.setPercentWidth(50);
+            var row = new RowConstraints();
+            row.setPercentHeight(100.0/n);
+            pane.getRowConstraints().add(row);
 
-        var row = new RowConstraints();
-        row.setPercentHeight(100);
-        row.setFillHeight(true);
-        pane.getColumnConstraints().addAll(column1, column2);
-        pane.getRowConstraints().add(row);
-        pane.add(button1, 0, 0);
-        pane.add(button2, 1, 0);
+            for (int j = 0; j < n; j++) {
+                pane.add(new XOButton(), i, j);
+            }
+        }
 
-        var scene = new Scene(pane, 500, 500);
-        primaryStage.setTitle("lol");
+        var scene = new Scene(pane, 300, 300);
+        primaryStage.setTitle("X vs O");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
     public static void main(String[] args) {
         Application.launch(args);
     }
+
+    private class XOButton extends Button {
+        private final String[] text = {"X", "0"};
+        private boolean wasChanged = false;
+
+        private XOButton() {
+            setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            setOnAction(value -> {
+                if(!wasChanged) {
+                    setText(text[turn % 2]) ;
+                    turn++;
+                    wasChanged = true;
+                }
+            });
+        }
+    }
+
 }
