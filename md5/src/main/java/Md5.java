@@ -13,7 +13,7 @@ import java.util.concurrent.RecursiveTask;
 
 class Md5 {
 
-    public static MessageDigest hashFile(File file) throws IOException, NoSuchAlgorithmException {
+    private static MessageDigest hashFile(File file) throws IOException, NoSuchAlgorithmException {
 
         MessageDigest md5 = MessageDigest.getInstance("MD5");
 
