@@ -5,9 +5,14 @@ import java.security.NoSuchAlgorithmException;
 
 public class Main {
     public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("need args");
+            return;
+        }
         File file = new File(args[0]);
         if (!file.exists()) {
             System.out.println("cant find " + args[0]);
+            return;
         }
 
         try {
@@ -29,7 +34,5 @@ public class Main {
         long finishForkJoin = System.currentTimeMillis();
 
         System.out.println("One thread finished in " + (finishForkJoin - startForkJoin) + " ms and res = " + forkJoinRes.toString());
-
-
     }
 }
