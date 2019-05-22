@@ -16,6 +16,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
@@ -26,34 +27,32 @@ public class ServerFTP {
 //    private ExecutorService pool;
 //    private ExecutorService serverPull;
 //    private task
-    public static void runServer() throws IOException {
-        new ServerTask(999).run();
+    public static void runServer(int port) throws IOException {
+        new ServerTask(port).run();
     }
 
     private static class ServerTask implements Runnable {
 
-        private final int port;
-        private final int bufferSize = 1000;
-        private ServerSocketChannel serverSocketChannel;
-        private Selector selector;
-        private ByteBuffer buffer = ByteBuffer.allocate(1000);
+    private final int port;
+    private final int bufferSize = 1024;
+    private ServerSocketChannel serverSocketChannel;
+    private Selector selector;
+    private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 
     public ServerTask(int port) throws IOException {
         this.port = port;
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
         serverSocketChannel.configureBlocking(false);
 
-        Selector selector = Selector.open();
+        selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
     @Override
         public void run() {
             try {
-
                 while (true) {
-
                     if (selector.isOpen()) {
                         Set<SelectionKey> selectedKeys = selector.selectedKeys();
                         for (var key : selectedKeys) {
@@ -91,15 +90,18 @@ public class ServerFTP {
                 buffer.flip();
                 byte[] inputBytes = new byte[buffer.limit()];
                 buffer.get(inputBytes);
-                stringBuilder.append(inputBytes);
+                stringBuilder.append(new String(inputBytes));
             }
             String inputStream = stringBuilder.toString();
             if (inputStream.startsWith("1")) {
-                String answer = getList(inputStream);
-                buffer.clear();
-                buffer.put(answer.getBytes(UTF_8));
-                buffer.flip();
-                channel.write(buffer);
+                byte[] answer = getList(inputStream).getBytes(UTF_8);
+
+                for (int i = 0; i < answer.length; i += bufferSize) {
+                    buffer.clear();
+                    buffer.put(answer, i, bufferSize);
+                    buffer.flip();
+                    channel.write(buffer);
+                }
             }
 
             if (inputStream.startsWith("2")) {
