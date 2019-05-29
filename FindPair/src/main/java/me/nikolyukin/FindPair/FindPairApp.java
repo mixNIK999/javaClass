@@ -103,8 +103,8 @@ public class FindPairApp  extends Application {
     }
     private class NumberButton extends Button {
         private boolean isDisabled = false;
-        private int number;
-        private int pauseSeconds = 1;
+        private final int number;
+        private final int pauseSeconds = 1;
 
         private NumberButton(int number) {
             this.number = number;
