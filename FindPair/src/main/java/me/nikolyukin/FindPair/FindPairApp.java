@@ -30,8 +30,9 @@ public class FindPairApp  extends Application {
         var pane = new GridPane();
         pane.setGridLinesVisible(true);
 
-//        var
-        int n = 2;
+        List<String> args = getParameters().getUnnamed();
+
+        int n = Integer.parseInt(args.get(0));
         scoreToWin = n * n / 2;
         List<Integer> numbers = new ArrayList<>(n * n);
 
@@ -56,23 +57,47 @@ public class FindPairApp  extends Application {
         }
 
         var scene = new Scene(pane, 500, 500);
-        primaryStage.setTitle("Find Pair");
+        if (isWin()) {
+            primaryStage.setTitle("You win!!!!");
+        } else {
+            primaryStage.setTitle("Find Pair");
+        }
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
     public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Needs one natural integer argument");
+            return;
+        }
+
+        try {
+            if (Integer.parseInt(args[0]) <= 0) {
+                System.out.println("Argument is not natural integer");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Argument is not integer");
+            return;
+        }
+
+
         Application.launch(args);
     }
 
     private void incrementScore() {
         ++score;
-        if (score == scoreToWin) {
+        if (isWin()) {
             stage.setTitle("You win!!!!");
         }
     }
+
+    private boolean isWin() {
+        return score == scoreToWin;
+    }
     private class NumberButton extends Button {
-        private boolean isActive = false;
+        private boolean isDisabled = false;
         private int number;
         private int pauseSeconds = 1;
 
@@ -82,8 +107,8 @@ public class FindPairApp  extends Application {
             setText(String.valueOf(number)) ;
             setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             setOnAction(value -> {
-                if(!pause && !isActive) {
-                    isActive = true;
+                if(!pause && !isDisabled) {
+                    isDisabled = true;
                     if (prevButton == null) {
                         choose();
                         prevButton = this;
@@ -119,22 +144,23 @@ public class FindPairApp  extends Application {
 
         void hide() {
             setStyle("-fx-text-fill: transparent");
-            isActive = false;
+            isDisabled = false;
         }
 
         void accept() {
             setStyle("-fx-text-fill: green");
-            isActive = true;
+            isDisabled = true;
+            setDisabled(true);
         }
 
         void reject() {
             setStyle("-fx-text-fill: red");
-            isActive = true;
+            isDisabled = true;
         }
 
         void choose() {
-            setStyle("-fx-text-fill: blue");
-            isActive = true;
+            setStyle("-fx-background-color: gray; -fx-text-fill: transparent");
+            isDisabled = true;
         }
     }
 }
