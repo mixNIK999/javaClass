@@ -1,6 +1,12 @@
 package me.nikolyukin.FindPair;
 
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -10,15 +16,31 @@ import javafx.scene.layout.RowConstraints;
 import javafx.stage.Stage;
 
 public class FindPairApp  extends Application {
-    private int turn = 0;
+    private NumberButton prevButton;
+    private volatile boolean pause = false;
+
+    private int score = 0;
+    private int scoreToWin;
+    private Stage stage;
 
     @Override
     public void start(Stage primaryStage) {
 
+        this.stage = primaryStage;
         var pane = new GridPane();
         pane.setGridLinesVisible(true);
 
-        int n = 10;
+//        var
+        int n = 2;
+        scoreToWin = n * n / 2;
+        List<Integer> numbers = new ArrayList<>(n * n);
+
+        for (int i = 0; i < n * n; i++) {
+            numbers.add(i/2);
+        }
+
+        Collections.shuffle(numbers);
+
         for (int i = 0; i < n; i++) {
             var column = new ColumnConstraints();
             column.setPercentWidth(100.0/n);
@@ -29,32 +51,90 @@ public class FindPairApp  extends Application {
             pane.getRowConstraints().add(row);
 
             for (int j = 0; j < n; j++) {
-                pane.add(new XOButton(), i, j);
+                pane.add(new NumberButton(numbers.get(i * n + j)), i, j);
             }
         }
 
-        var scene = new Scene(pane, 300, 300);
+        var scene = new Scene(pane, 500, 500);
         primaryStage.setTitle("Find Pair");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
+
     public static void main(String[] args) {
         Application.launch(args);
     }
 
-    private class XOButton extends Button {
-        private final String[] text = {"X", "0"};
-        private boolean wasChanged = false;
+    private void incrementScore() {
+        ++score;
+        if (score == scoreToWin) {
+            stage.setTitle("You win!!!!");
+        }
+    }
+    private class NumberButton extends Button {
+        private boolean isActive = false;
+        private int number;
+        private int pauseSeconds = 1;
 
-        private XOButton() {
+        private NumberButton(int number) {
+            this.number = number;
+            hide();
+            setText(String.valueOf(number)) ;
             setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             setOnAction(value -> {
-                if(!wasChanged) {
-                    setText(text[turn % 2]) ;
-                    turn++;
-                    wasChanged = true;
+                if(!pause && !isActive) {
+                    isActive = true;
+                    if (prevButton == null) {
+                        choose();
+                        prevButton = this;
+                        return;
+                    }
+
+                    NumberButton pairButton = prevButton;
+                    if (pairButton.number == number) {
+                        accept();
+                        pairButton.accept();
+                        FindPairApp.this.incrementScore();
+                    } else {
+                        reject();
+                        pairButton.reject();
+                        pause = true;
+
+                        var timer = new Timer();
+                        var task = new TimerTask() {
+                            @Override
+                            public void run() {
+                                NumberButton.this.hide();
+                                pairButton.hide();
+                                pause = false;
+                                timer.cancel();
+                            }
+                        };
+                        timer.schedule(task, TimeUnit.SECONDS.toMillis(pauseSeconds));
+                    }
+                    prevButton = null;
                 }
             });
+        }
+
+        void hide() {
+            setStyle("-fx-text-fill: transparent");
+            isActive = false;
+        }
+
+        void accept() {
+            setStyle("-fx-text-fill: green");
+            isActive = true;
+        }
+
+        void reject() {
+            setStyle("-fx-text-fill: red");
+            isActive = true;
+        }
+
+        void choose() {
+            setStyle("-fx-text-fill: blue");
+            isActive = true;
         }
     }
 }
