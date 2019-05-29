@@ -34,13 +34,7 @@ public class FindPairApp  extends Application {
 
         int n = Integer.parseInt(args.get(0));
         scoreToWin = n * n / 2;
-        List<Integer> numbers = new ArrayList<>(n * n);
-
-        for (int i = 0; i < n * n; i++) {
-            numbers.add(i/2);
-        }
-
-        Collections.shuffle(numbers);
+        ArrayList<Integer> numbers = generateRandomPairsList(n * n);
 
         for (int i = 0; i < n; i++) {
             var column = new ColumnConstraints();
@@ -64,6 +58,17 @@ public class FindPairApp  extends Application {
         }
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private static ArrayList<Integer> generateRandomPairsList(int size) {
+        ArrayList<Integer> numbers = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++) {
+            numbers.add(i/2);
+        }
+
+        Collections.shuffle(numbers);
+        return numbers;
     }
 
     public static void main(String[] args) {
@@ -142,23 +147,23 @@ public class FindPairApp  extends Application {
             });
         }
 
-        void hide() {
+        private void hide() {
             setStyle("-fx-text-fill: transparent");
             isDisabled = false;
         }
 
-        void accept() {
+        private void accept() {
             setStyle("-fx-text-fill: green");
             isDisabled = true;
             setDisabled(true);
         }
 
-        void reject() {
+        private void reject() {
             setStyle("-fx-text-fill: red");
             isDisabled = true;
         }
 
-        void choose() {
+        private void choose() {
             setStyle("-fx-background-color: gray; -fx-text-fill: transparent");
             isDisabled = true;
         }
