@@ -1,12 +1,10 @@
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -16,10 +14,9 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerFTP {
 
@@ -40,7 +37,7 @@ public class ServerFTP {
     private ServerSocketChannel serverSocketChannel;
     private Selector selector;
     private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-    private BlockingQueue<TaskData> resultQueue = new LinkedBlockingQueue<>();
+    private ConcurrentLinkedQueue<TaskData> resultQueue = new ConcurrentLinkedQueue<>();
 
     public ServerTask(int port) throws IOException {
         this.port = port;
@@ -70,12 +67,22 @@ public class ServerFTP {
 
                             if (key.isWritable()) {
                                 doWrite((SocketChannel) key.channel(), (String) key.attachment());
+                                key.cancel();
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                     selectedKeys.clear();
+
+                    while(!resultQueue.isEmpty()) {
+                        TaskData taskData = resultQueue.poll();
+                        try {
+                            taskData.channel.register(selector, SelectionKey.OP_WRITE).attach(taskData.taskData);
+                        } catch (ClosedChannelException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
             }
         }
@@ -96,7 +103,6 @@ public class ServerFTP {
         }
 
         private void doRead(SocketChannel channel) throws IOException {
-            var stringBuilder = new StringBuilder();
 
             buffer.clear();
             channel.read(buffer);
@@ -114,54 +120,6 @@ public class ServerFTP {
             }
         }
 
-        private void answerGetAndWriteInChannel(String input, SocketChannel channel) {
-            var in = new Scanner(input);
-            buffer.clear();
-            if (in.nextInt() != 2) {
-                buffer.put("-1".getBytes(UTF_8));
-                return;
-            }
-
-            File file = new File(in.next());
-            if (file.exists() && file.isFile() && file.canRead()) {
-                try (var reader = new BufferedInputStream(new FileInputStream(file))) {
-                    buffer.clear();
-                    buffer.put(Long.valueOf(file.length()).toString().getBytes(UTF_8));
-                    buffer.flip();
-                    channel.write(buffer);
-
-                    int len;
-                    byte[] bytes = new byte[bufferSize];
-
-                    while ((len = reader.read(bytes, 0, bufferSize)) > 0) {
-                        buffer.clear();
-                        buffer.put(bytes, 0, len);
-                        buffer.flip();
-                        channel.write(buffer);
-                    }
-                } catch (IOException e) {
-                    buffer.put("-1".getBytes(UTF_8));
-                    return;
-                }
-
-            }
-            buffer.put("-1".getBytes(UTF_8));
-        }
-
-        private void writeFileAnswer(SocketChannel channel, byte[] data) throws IOException {
-            ByteBuffer writeBuff = ByteBuffer.allocate(bufferSize);
-            writeBuff.clear();
-            writeBuff.putInt(data.length);
-            writeBuff.put(data);
-            channel.write(writeBuff);
-        }
-
-        private void writeListAnswer(SocketChannel channel, String answer) throws IOException {
-            ByteBuffer writeBuff = ByteBuffer.allocate(bufferSize);
-            writeBuff.clear();
-            writeBuff.put(answer.getBytes(UTF_8));
-            channel.write(writeBuff);
-        }
 
         private static class TaskData {
             private String taskData;
@@ -175,9 +133,9 @@ public class ServerFTP {
 
         private static class ListTask implements Runnable {
             private final TaskData input;
-            private BlockingQueue<TaskData> resultQueue;
+            private ConcurrentLinkedQueue<TaskData> resultQueue;
 
-            private ListTask(TaskData input, BlockingQueue<TaskData> resultQueue) {
+            private ListTask(TaskData input, ConcurrentLinkedQueue<TaskData> resultQueue) {
                 this.input = input;
                 this.resultQueue = resultQueue;
             }
@@ -208,28 +166,29 @@ public class ServerFTP {
 
         private static class GetTask implements Runnable {
             private final TaskData input;
-            private BlockingQueue<TaskData> resultQueue;
+            private ConcurrentLinkedQueue<TaskData> resultQueue;
 
-            private GetTask(TaskData input, BlockingQueue<TaskData> resultQueue) {
+            private GetTask(TaskData input, ConcurrentLinkedQueue<TaskData> resultQueue) {
                 this.input = input;
                 this.resultQueue = resultQueue;
             }
 
             @Override
             public void run() {
-                resultQueue.add(new TaskData(new String(getFile(input.taskData), UTF_8), input.channel));
+                resultQueue.add(new TaskData(getFile(input.taskData), input.channel));
             }
 
-            private static byte[] getFile(String fileRequest) {
+            private static String getFile(String fileRequest) {
                 var in = new Scanner(fileRequest);
-                var errString = "-1".getBytes(UTF_8);
+                var errString = "-1";
                 if (in.nextInt() != 2) {
                     return errString;
                 }
 
-                String path = in.next();
                 try {
-                    return Files.readAllBytes(Paths.get(path)) ;
+                    String path = in.next();
+                    var bytes = Files.readAllBytes(Paths.get(path));
+                    return bytes.length + new String(bytes, UTF_8) ;
                 } catch (IOException e) {
                     return errString;
                 }
