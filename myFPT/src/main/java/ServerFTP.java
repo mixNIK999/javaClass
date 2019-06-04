@@ -42,6 +42,7 @@ public class ServerFTP {
 
     public ServerTask(int port) throws IOException {
         this.port = port;
+        
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
         serverSocketChannel.configureBlocking(false);
@@ -89,10 +90,10 @@ public class ServerFTP {
         }
 
         private void doWrite(SocketChannel channel, String answer) throws IOException {
-            ByteBuffer writeBuff = ByteBuffer.allocate(bufferSize);
-            writeBuff.clear();
-            writeBuff.put(answer.getBytes(UTF_8));
-            channel.write(writeBuff);
+            buffer.clear();
+            buffer.put(answer.getBytes(UTF_8));
+            buffer.flip();
+            channel.write(buffer);
         }
 
         private void doAccept(ServerSocketChannel serverChannel, Selector selector)
