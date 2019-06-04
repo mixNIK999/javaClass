@@ -1,6 +1,7 @@
+package me.nikolyukin.ftp;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -9,25 +10,23 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Objects;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import me.nikolyukin.ftp.ServerTasks.GetTask;
+import me.nikolyukin.ftp.ServerTasks.ListTask;
+import me.nikolyukin.ftp.ServerTasks.TaskData;
 
 public class ServerFTP {
 
     private ExecutorService serverTread = Executors.newSingleThreadExecutor();
 
     public void runServer(int port) throws IOException {
-        serverTread.submit(new ServerTask(port));
+        serverTread.submit(new IOServerTask(port));
     }
 
-    private static class ServerTask implements Runnable {
+    private static class IOServerTask implements Runnable {
 
     private ExecutorService pool;
 
@@ -40,9 +39,9 @@ public class ServerFTP {
     private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
     private ConcurrentLinkedQueue<TaskData> resultQueue = new ConcurrentLinkedQueue<>();
 
-    public ServerTask(int port) throws IOException {
+    private IOServerTask(int port) throws IOException {
         this.port = port;
-        
+
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
         serverSocketChannel.configureBlocking(false);
@@ -80,7 +79,7 @@ public class ServerFTP {
                     while(!resultQueue.isEmpty()) {
                         TaskData taskData = resultQueue.poll();
                         try {
-                            taskData.channel.register(selector, SelectionKey.OP_WRITE).attach(taskData.taskData);
+                            taskData.getChannel().register(selector, SelectionKey.OP_WRITE).attach(taskData.getTaskData());
                         } catch (ClosedChannelException e) {
                             e.printStackTrace();
                         }
@@ -123,78 +122,5 @@ public class ServerFTP {
         }
 
 
-        private static class TaskData {
-            private String taskData;
-            private SocketChannel channel;
-
-            private TaskData(String taskData, SocketChannel channel) {
-                this.taskData = taskData;
-                this.channel = channel;
-            }
-        }
-
-        private static class ListTask implements Runnable {
-            private final TaskData input;
-            private ConcurrentLinkedQueue<TaskData> resultQueue;
-
-            private ListTask(TaskData input, ConcurrentLinkedQueue<TaskData> resultQueue) {
-                this.input = input;
-                this.resultQueue = resultQueue;
-            }
-
-            @Override
-            public void run() {
-                resultQueue.add(new TaskData(getList(input.taskData), input.channel));
-            }
-
-            private static String getList(String input) {
-                var in = new Scanner(input);
-                if (in.nextInt() != 1) {
-                    return "-1";
-                }
-
-                File dir = new File(in.next());
-                if (dir.exists() && dir.isDirectory()) {
-                    var list = Objects.requireNonNull(dir.listFiles());
-                    var answer = new StringBuilder(list.length + " ");
-                    for (var file : list) {
-                        answer.append(file.getName()).append(" ").append((file.isDirectory()) ? "1" : "0");
-                    }
-                    return answer.toString();
-                }
-                return "-1";
-            }
-        }
-
-        private static class GetTask implements Runnable {
-            private final TaskData input;
-            private ConcurrentLinkedQueue<TaskData> resultQueue;
-
-            private GetTask(TaskData input, ConcurrentLinkedQueue<TaskData> resultQueue) {
-                this.input = input;
-                this.resultQueue = resultQueue;
-            }
-
-            @Override
-            public void run() {
-                resultQueue.add(new TaskData(getFile(input.taskData), input.channel));
-            }
-
-            private static String getFile(String fileRequest) {
-                var in = new Scanner(fileRequest);
-                var errString = "-1";
-                if (in.nextInt() != 2) {
-                    return errString;
-                }
-
-                try {
-                    String path = in.next();
-                    var bytes = Files.readAllBytes(Paths.get(path));
-                    return bytes.length + new String(bytes, UTF_8) ;
-                } catch (IOException e) {
-                    return errString;
-                }
-            }
-        }
     }
 }

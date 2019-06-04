@@ -1,3 +1,5 @@
+package me.nikolyukin.ftp;
+
 import java.io.IOException;
 
 public class Main {
