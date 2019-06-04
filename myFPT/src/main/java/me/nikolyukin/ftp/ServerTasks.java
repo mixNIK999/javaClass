@@ -15,8 +15,10 @@ public class ServerTasks {
 
     public static String getList(String input) {
         var in = new Scanner(input);
-        if (in.nextInt() != 1) {
-            return "-1";
+        var errString = "-1";
+
+        if (!in.hasNextInt() || in.nextInt() != 1 || !in.hasNext()) {
+            return errString;
         }
 
         File dir = new File(in.next());
@@ -24,16 +26,17 @@ public class ServerTasks {
             var list = Objects.requireNonNull(dir.listFiles());
             var answer = new StringBuilder(list.length + " ");
             for (var file : list) {
-                answer.append(file.getName()).append(" ").append((file.isDirectory()) ? "1" : "0");
+                answer.append(file.getName()).append(" ").append((file.isDirectory()) ? "1 " : "0 ");
             }
             return answer.toString();
         }
-        return "-1";
+        return errString;
     }
 
     public static String getFile(String fileRequest) {
         var in = new Scanner(fileRequest);
         var errString = "-1";
+
         if (in.nextInt() != 2) {
             return errString;
         }
