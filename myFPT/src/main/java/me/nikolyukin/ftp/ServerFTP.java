@@ -95,6 +95,7 @@ public class ServerFTP {
                                     doWrite((SocketChannel) key.channel(),
                                         (String) key.attachment());
                                     key.cancel();
+                                    key.channel().close();
                                 }
                             } catch (IOException e) {
                                 e.printStackTrace();
