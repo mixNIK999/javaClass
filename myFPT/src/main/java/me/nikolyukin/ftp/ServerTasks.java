@@ -44,7 +44,7 @@ public class ServerTasks {
         try {
             String path = in.next();
             var bytes = Files.readAllBytes(Paths.get(path));
-            return bytes.length + new String(bytes, UTF_8) ;
+            return bytes.length + " " + new String(bytes, UTF_8) ;
         } catch (IOException e) {
             return errString;
         }

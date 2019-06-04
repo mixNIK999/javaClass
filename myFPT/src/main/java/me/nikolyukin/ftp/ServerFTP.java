@@ -89,10 +89,13 @@ public class ServerFTP {
         }
 
         private void doWrite(SocketChannel channel, String answer) throws IOException {
-            buffer.clear();
-            buffer.put(answer.getBytes(UTF_8));
-            buffer.flip();
-            channel.write(buffer);
+            byte[] answerBytes = answer.getBytes(UTF_8);
+            for (int i = 0; i < answerBytes.length; i+= bufferSize) {
+                buffer.clear();
+                buffer.put(answerBytes, i, bufferSize);
+                buffer.flip();
+                channel.write(buffer);
+            }
         }
 
         private void doAccept(ServerSocketChannel serverChannel, Selector selector)
