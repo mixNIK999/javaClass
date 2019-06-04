@@ -1,5 +1,6 @@
 package me.nikolyukin.ftp;
 
+import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -57,8 +59,8 @@ public class ServerFTP {
         this.itsTimeToStop = itsTimeToStop;
 
         serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.socket().bind(new InetSocketAddress(port));
         serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.bind(new InetSocketAddress(port));
 
         selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -69,34 +71,48 @@ public class ServerFTP {
         public void run() {
             while (!itsTimeToStop.get()) {
                 if (selector.isOpen()) {
-                    Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                    for (var key : selectedKeys) {
-                        try {
-                            if (key.isAcceptable()) {
-                                doAccept((ServerSocketChannel) key.channel(), selector);
-                            }
-
-                            if (key.isReadable()) {
-                                doRead((SocketChannel) key.channel());
-                            }
-
-                            if (key.isWritable()) {
-                                doWrite((SocketChannel) key.channel(), (String) key.attachment());
-                                key.cancel();
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                    int res = 0;
+                    try {
+                        res = selector.selectNow();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    selectedKeys.clear();
+                    if (res > 0) {
+                        Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                        Iterator<SelectionKey> iter = selectedKeys.iterator();
+                        while (iter.hasNext()) {
+                            var key = iter.next();
+                            try {
+                                if (key.isAcceptable()) {
+                                    doAccept((ServerSocketChannel) key.channel(), selector);
+                                }
 
-                    while(!resultQueue.isEmpty()) {
-                        TaskData taskData = resultQueue.poll();
+                                if (key.isReadable()) {
+                                    doRead((SocketChannel) key.channel());
+                                }
+
+                                if (key.isWritable()) {
+                                    doWrite((SocketChannel) key.channel(),
+                                        (String) key.attachment());
+                                    key.cancel();
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            iter.remove();
+                        }
+                        selectedKeys.clear();
+                    }
+//                    System.out.println("wow");
+                    TaskData taskData = resultQueue.poll();
+                    while(taskData != null) {
+//                        TaskData taskData = resultQueue.poll();
                         try {
                             taskData.getChannel().register(selector, SelectionKey.OP_WRITE).attach(taskData.getTaskData());
                         } catch (ClosedChannelException e) {
                             e.printStackTrace();
                         }
+                        taskData = resultQueue.poll();
                     }
                 }
             }
@@ -104,18 +120,23 @@ public class ServerFTP {
         }
 
         private void doWrite(SocketChannel channel, String answer) throws IOException {
+
+//            System.out.println("doWrite");
             byte[] answerBytes = answer.getBytes(UTF_8);
             for (int i = 0; i < answerBytes.length; i+= bufferSize) {
                 buffer.clear();
-                buffer.put(answerBytes, i, bufferSize);
+                buffer.put(answerBytes, i, min(answerBytes.length - i, bufferSize));
                 buffer.flip();
                 channel.write(buffer);
+//                System.out.println("doneWrite");
             }
+//            System.out.println("doneWrite");
         }
 
         private void doAccept(ServerSocketChannel serverChannel, Selector selector)
             throws IOException {
 
+//            System.out.println("doAccept");
             SocketChannel clientChannel = serverChannel.accept();
             clientChannel.configureBlocking(false);
             clientChannel.register(selector, SelectionKey.OP_READ);
@@ -123,6 +144,7 @@ public class ServerFTP {
 
         private void doRead(SocketChannel channel) throws IOException {
 
+//            System.out.println("doRead");
             buffer.clear();
             channel.read(buffer);
             buffer.flip();
@@ -131,6 +153,7 @@ public class ServerFTP {
             TaskData data = new TaskData(input, channel);
 
             if (input.startsWith("1")) {
+//                System.out.println("submit");
                 pool.submit(new ListTask(data, resultQueue));
             }
 

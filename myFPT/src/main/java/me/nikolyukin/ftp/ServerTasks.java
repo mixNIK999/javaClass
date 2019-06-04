@@ -79,7 +79,10 @@ public class ServerTasks {
 
         @Override
         public void run() {
-            resultQueue.add(new TaskData(getList(input.taskData), input.channel));
+//            System.out.println("Run");
+            var task = new TaskData(getList(input.taskData), input.channel);
+            resultQueue.add(task);
+//            resultQueue.notifyAll();
         }
 
     }
@@ -95,7 +98,7 @@ public class ServerTasks {
 
         @Override
         public void run() {
-            resultQueue.add(new TaskData(getFile(input.taskData), input.channel));
+            resultQueue.offer(new TaskData(getFile(input.taskData), input.channel));
         }
 
     }
