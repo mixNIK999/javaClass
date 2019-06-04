@@ -14,16 +14,28 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import me.nikolyukin.ftp.ServerTasks.GetTask;
 import me.nikolyukin.ftp.ServerTasks.ListTask;
 import me.nikolyukin.ftp.ServerTasks.TaskData;
 
 public class ServerFTP {
 
-    private ExecutorService serverTread = Executors.newSingleThreadExecutor();
+    private ExecutorService serverTread;
+    private AtomicBoolean itsTimeToStop = new AtomicBoolean(true);
 
-    public void runServer(int port) throws IOException {
-        serverTread.submit(new IOServerTask(port));
+    public void start(int port) throws IOException {
+        if (itsTimeToStop.get()) {
+            serverTread = Executors.newSingleThreadExecutor();
+            itsTimeToStop.set(false);
+            serverTread.submit(new IOServerTask(port, itsTimeToStop));
+        }
+    }
+
+    public void stop() {
+        if (!itsTimeToStop.getAndSet(true)) {
+            serverTread.shutdown();
+        }
     }
 
     private static class IOServerTask implements Runnable {
@@ -34,13 +46,15 @@ public class ServerFTP {
     private final int bufferSize = 1024;
     private final int nThreads = 6;
 
+    AtomicBoolean itsTimeToStop;
     private ServerSocketChannel serverSocketChannel;
     private Selector selector;
     private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
     private ConcurrentLinkedQueue<TaskData> resultQueue = new ConcurrentLinkedQueue<>();
 
-    private IOServerTask(int port) throws IOException {
+    private IOServerTask(int port, AtomicBoolean itsTimeToStop) throws IOException {
         this.port = port;
+        this.itsTimeToStop = itsTimeToStop;
 
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
@@ -53,7 +67,7 @@ public class ServerFTP {
 
     @Override
         public void run() {
-            while (true) {
+            while (!itsTimeToStop.get()) {
                 if (selector.isOpen()) {
                     Set<SelectionKey> selectedKeys = selector.selectedKeys();
                     for (var key : selectedKeys) {
@@ -86,6 +100,7 @@ public class ServerFTP {
                     }
                 }
             }
+            pool.shutdown();
         }
 
         private void doWrite(SocketChannel channel, String answer) throws IOException {

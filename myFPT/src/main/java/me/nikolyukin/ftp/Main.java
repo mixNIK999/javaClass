@@ -1,11 +1,15 @@
 package me.nikolyukin.ftp;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         var server = new ServerFTP();
-        server.runServer(9999);
+        server.start(9999);
+        System.out.println("press enter to stop server");
+        System.in.read();
+        server.stop();
     }
 
 }
