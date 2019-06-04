@@ -18,8 +18,8 @@ public class ClientFTP {
 
     private static final int BUFFER_SIZE = 1024;
 
-    public ClientFTP(InetSocketAddress address) {
-        this.address = address;
+    public ClientFTP(int port) {
+        this.address = new InetSocketAddress(port);
     }
 
     public void connect() throws IOException {
@@ -56,31 +56,32 @@ public class ClientFTP {
                     }
 
                     if (sk.isWritable()) {
-                        var ch = (SocketChannel) sk.channel();
-
                         var buffer = ByteBuffer.allocate(BUFFER_SIZE);
                         buffer.put(query.getBytes(UTF_8));
                         buffer.flip();
-                        ch.write(buffer);
+                        channel.write(buffer);
                         buffer.clear();
-                        var selQuery = Selector.open();
-                        ch.register(selQuery, SelectionKey.OP_READ);
+                        channel.register(selector, SelectionKey.OP_READ);
 
                         while (true) {
-                            if (selQuery.select() > 0) {
-                                for (var key: selQuery.selectedKeys()) {
+                            if (selector.select() > 0) {
+                                for (var key: selector.selectedKeys()) {
                                     if (key.isReadable()) {
-                                        var chResponse = (SocketChannel) key.channel();
-
                                         var byteStream = new ByteArrayOutputStream();
                                         var bytes = new byte[buffer.capacity()];
-                                        while (chResponse.read(buffer) > 0) {
+                                        while (channel.read(buffer) > 0) {
                                             buffer.flip();
+                                            if (buffer.remaining() < bytes.length) {
+                                                while (buffer.hasRemaining()) {
+                                                    byteStream.write(buffer.get());
+                                                }
+                                                break;
+                                            }
                                             buffer.get(bytes);
                                             byteStream.write(bytes);
                                             buffer.clear();
                                         }
-                                        chResponse.close();
+                                        channel.register(selector, SelectionKey.OP_WRITE);
                                         return new String(byteStream.toByteArray(), UTF_8);
                                     }
                                 }
@@ -88,7 +89,7 @@ public class ClientFTP {
                         }
                     }
                 }
-                return null;
+                //return null;
             }
         }
         return null;

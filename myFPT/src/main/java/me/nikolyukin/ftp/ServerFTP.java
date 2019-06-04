@@ -148,7 +148,10 @@ public class ServerFTP {
             buffer.clear();
             channel.read(buffer);
             buffer.flip();
-            String input = new String(buffer.array(), UTF_8);
+
+            var bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            String input = new String(bytes, UTF_8);
 
             TaskData data = new TaskData(input, channel);
 
