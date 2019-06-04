@@ -2,7 +2,8 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        ServerFTP.runServer(9999);
+        var server = new ServerFTP();
+        server.runServer(9999);
     }
 
 }

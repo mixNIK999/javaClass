@@ -15,15 +15,16 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerFTP {
 
-//    private ExecutorService serverPull;
-//    private task
-    public static void runServer(int port) throws IOException {
-        new ServerTask(port).run();
+    private ExecutorService serverTread = Executors.newSingleThreadExecutor();
+
+    public void runServer(int port) throws IOException {
+        serverTread.submit(new ServerTask(port));
     }
 
     private static class ServerTask implements Runnable {
