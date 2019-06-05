@@ -1,12 +1,13 @@
+package me.nikolyukin;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import me.nikolyukin.Parking;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class ParkingTest {
 
     private Parking parking;
-    private final int max = 3;
+    private final int max = 20;
     private ExecutorService pool;
 
     @BeforeEach
@@ -83,7 +84,7 @@ class ParkingTest {
             try {
                 return !f.get();
             } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }).count());
     }
@@ -109,7 +110,7 @@ class ParkingTest {
             try {
                 return f.get();
             } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }).count());
     }

@@ -1,4 +1,4 @@
-
+package me.nikolyukin;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
