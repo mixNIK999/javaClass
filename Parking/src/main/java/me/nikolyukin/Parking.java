@@ -17,7 +17,7 @@ public class Parking {
 
     /**
      * Конструктор создает парковку с заданным максимальным количеством мест.
-     * @param max максимальное клличество мест. должно быть >= 0.
+     * @param max максимальное количество мест >= 0.
      * @throws IllegalArgumentException если max < 0.
      */
     public Parking(int max) {
