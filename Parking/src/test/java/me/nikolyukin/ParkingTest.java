@@ -145,4 +145,33 @@ class ParkingTest {
             }
         }).count());
     }
+
+    @Test
+    void multiTreadExit() {
+
+        var car = new Callable<Boolean> (){
+            @Override
+            public Boolean call() throws InterruptedException {
+                return parking.exit();
+            }
+        };
+
+        var futures = new ArrayList<Future<Boolean>>();
+
+        int n = max;
+        for (int i = 0; i < n; i++) {
+            parking.enter();
+        }
+        for (int i = 0; i < n; i++) {
+            futures.add(pool.submit(car));
+        }
+
+        assertEquals(n, futures.stream().filter(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }).count());
+    }
 }

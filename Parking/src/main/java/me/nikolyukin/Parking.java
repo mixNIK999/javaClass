@@ -46,6 +46,6 @@ public class Parking {
      * @return true, если количество машин на парковке уменьшилось.
      */
     public boolean exit() {
-        return counter.getAndAccumulate(1, subWithMin) != 0;
+        return counter.getAndAccumulate(1, subWithMin) != min;
     }
 }
