@@ -108,7 +108,7 @@ public class ServerFTP {
                                     doWrite((SocketChannel) key.channel(),
                                         (String) key.attachment());
                                     key.cancel();
-                                    key.channel().close();
+//                                    key.channel().close();
                                 }
                             }
                             iter.remove();
