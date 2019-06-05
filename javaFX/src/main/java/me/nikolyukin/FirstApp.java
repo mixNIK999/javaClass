@@ -9,7 +9,8 @@ import javafx.scene.layout.RowConstraints;
 import javafx.stage.Stage;
 
 public class FirstApp extends Application {
-    private int turn = 0;
+    private int n = 3;
+    private Controller controller = new Controller(n);
 
     @Override
     public void start(Stage primaryStage) {
@@ -17,7 +18,6 @@ public class FirstApp extends Application {
         var pane = new GridPane();
         pane.setGridLinesVisible(true);
 
-        int n = 3;
         for (int i = 0; i < n; i++) {
             var column = new ColumnConstraints();
             column.setPercentWidth(100.0/n);
@@ -28,7 +28,7 @@ public class FirstApp extends Application {
             pane.getRowConstraints().add(row);
 
             for (int j = 0; j < n; j++) {
-                pane.add(new XOButton(), i, j);
+                pane.add(new XOButton(i, j), i, j);
             }
         }
 
@@ -43,18 +43,20 @@ public class FirstApp extends Application {
 
     private class XOButton extends Button {
         private final String[] text = {"X", "0"};
-        private boolean wasChanged = false;
+        private final int i, j;
 
-        private XOButton() {
+        private XOButton(int i, int j) {
+            this.i = i;
+            this.j = j;
             setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             setOnAction(value -> {
-                if(!wasChanged) {
-                    setText(text[turn % 2]) ;
-                    turn++;
-                    wasChanged = true;
+                int player = controller.open(i, j);
+                if (player != -1) {
+                    setText(text[player]);
                 }
             });
         }
+
     }
 
 }
