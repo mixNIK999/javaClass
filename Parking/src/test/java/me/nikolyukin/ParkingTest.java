@@ -3,6 +3,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,12 +17,13 @@ class ParkingTest {
 
     private Parking parking;
     private final int max = 20;
+    private final int nThreads = 4;
     private ExecutorService pool;
 
     @BeforeEach
     void init() {
         parking = new Parking(max);
-        pool = Executors.newFixedThreadPool(4);
+        pool = Executors.newFixedThreadPool(nThreads);
     }
 
     @AfterEach
@@ -107,6 +109,35 @@ class ParkingTest {
         }
 
         assertEquals(max, futures.stream().filter(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }).count());
+    }
+
+    @Test
+    void multiTreadEnterWaitAllAndExit() {
+        var letch = new CountDownLatch(nThreads);
+        var car = new Callable<Boolean> (){
+
+            @Override
+            public Boolean call() throws InterruptedException {
+                parking.enter();
+                letch.countDown();
+                letch.await();
+                return parking.exit();
+            }
+        };
+
+        var futures = new ArrayList<Future<Boolean>>();
+
+        for (int i = 0; i < nThreads; i++) {
+            futures.add(pool.submit(car));
+        }
+
+        assertEquals(nThreads, futures.stream().filter(f -> {
             try {
                 return f.get();
             } catch (InterruptedException | ExecutionException e) {
