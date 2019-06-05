@@ -21,11 +21,26 @@ import me.nikolyukin.ftp.ServerTasks.GetTask;
 import me.nikolyukin.ftp.ServerTasks.ListTask;
 import me.nikolyukin.ftp.ServerTasks.TaskData;
 
+/**
+ * nio сервер FTP.
+ * Умеет обрабатывать 2 типа запросов:
+ * list — листинг файлов в директории на сервере.
+ * @see ServerTasks#getList(String)
+ *
+ * get — скачивание файла с сервера.
+ * @see ServerTasks#getFile(String)
+ */
 public class ServerFTP {
 
     private ExecutorService serverTread;
     private AtomicBoolean itsTimeToStop = new AtomicBoolean(true);
 
+    /**
+     * Запуск сервера. Если уже запущен, ничего не делает.
+     *
+     * @param port порт сервера.
+     * @throws IOException бросается если не удалось открыть сокет по данному порту.
+     */
     public void start(int port) throws IOException {
         if (itsTimeToStop.get()) {
             serverTread = Executors.newSingleThreadExecutor();
@@ -34,6 +49,9 @@ public class ServerFTP {
         }
     }
 
+    /**
+     * Остановка сервера. Если уже остановлен, ничего не делает.
+     */
     public void stop() {
         if (!itsTimeToStop.getAndSet(true)) {
             serverTread.shutdown();
@@ -42,32 +60,32 @@ public class ServerFTP {
 
     private static class IOServerTask implements Runnable {
 
-    private ExecutorService pool;
+        private ExecutorService pool;
 
-    private final int port;
-    private final int bufferSize = 1024;
-    private final int nThreads = 6;
+        private final int port;
+        private final int bufferSize = 1024;
+        private final int nThreads = 6;
 
-    AtomicBoolean itsTimeToStop;
-    private ServerSocketChannel serverSocketChannel;
-    private Selector selector;
-    private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-    private ConcurrentLinkedQueue<TaskData> resultQueue = new ConcurrentLinkedQueue<>();
+        AtomicBoolean itsTimeToStop;
+        private ServerSocketChannel serverSocketChannel;
+        private Selector selector;
+        private ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+        private ConcurrentLinkedQueue<TaskData> resultQueue = new ConcurrentLinkedQueue<>();
 
-    private IOServerTask(int port, AtomicBoolean itsTimeToStop) throws IOException {
-        this.port = port;
-        this.itsTimeToStop = itsTimeToStop;
+        private IOServerTask(int port, AtomicBoolean itsTimeToStop) throws IOException {
+            this.port = port;
+            this.itsTimeToStop = itsTimeToStop;
 
-        serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.bind(new InetSocketAddress(port));
+            serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel.configureBlocking(false);
+            serverSocketChannel.bind(new InetSocketAddress(port));
 
-        selector = Selector.open();
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        pool = Executors.newFixedThreadPool(nThreads);
-    }
+            selector = Selector.open();
+            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+            pool = Executors.newFixedThreadPool(nThreads);
+        }
 
-    @Override
+        @Override
         public void run() {
             while (!itsTimeToStop.get()) {
                 if (selector.isOpen()) {
@@ -104,10 +122,8 @@ public class ServerFTP {
                         }
                         selectedKeys.clear();
                     }
-//                    System.out.println("wow");
                     TaskData taskData = resultQueue.poll();
                     while(taskData != null) {
-//                        TaskData taskData = resultQueue.poll();
                         try {
                             taskData.getChannel().register(selector, SelectionKey.OP_WRITE).attach(taskData.getTaskData());
                         } catch (ClosedChannelException e) {
@@ -122,22 +138,18 @@ public class ServerFTP {
 
         private void doWrite(SocketChannel channel, String answer) throws IOException {
 
-//            System.out.println("doWrite");
             byte[] answerBytes = answer.getBytes(UTF_8);
             for (int i = 0; i < answerBytes.length; i+= bufferSize) {
                 buffer.clear();
                 buffer.put(answerBytes, i, min(answerBytes.length - i, bufferSize));
                 buffer.flip();
                 channel.write(buffer);
-//                System.out.println("doneWrite");
             }
-//            System.out.println("doneWrite");
         }
 
         private void doAccept(ServerSocketChannel serverChannel, Selector selector)
             throws IOException {
 
-//            System.out.println("doAccept");
             SocketChannel clientChannel = serverChannel.accept();
             clientChannel.configureBlocking(false);
             clientChannel.register(selector, SelectionKey.OP_READ);
@@ -145,7 +157,6 @@ public class ServerFTP {
 
         private void doRead(SocketChannel channel) throws IOException {
 
-//            System.out.println("doRead");
             buffer.clear();
             channel.read(buffer);
             buffer.flip();
@@ -157,7 +168,6 @@ public class ServerFTP {
             TaskData data = new TaskData(input, channel);
 
             if (input.startsWith("1")) {
-//                System.out.println("submit");
                 pool.submit(new ListTask(data, resultQueue));
             }
 
