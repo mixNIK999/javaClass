@@ -89,18 +89,13 @@ public class ServerFTP {
         public void run() {
             while (!itsTimeToStop.get()) {
                 if (selector.isOpen()) {
-                    int res = 0;
                     try {
-                        res = selector.selectNow();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (res > 0) {
-                        Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                        Iterator<SelectionKey> iter = selectedKeys.iterator();
-                        while (iter.hasNext()) {
+                        int res = selector.selectNow();
+                        if (res > 0) {
+                            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                            Iterator<SelectionKey> iter = selectedKeys.iterator();
+                            while (iter.hasNext()) {
                             var key = iter.next();
-                            try {
                                 if (key.isAcceptable()) {
                                     doAccept((ServerSocketChannel) key.channel(), selector);
                                 }
@@ -115,12 +110,11 @@ public class ServerFTP {
                                     key.cancel();
                                     key.channel().close();
                                 }
-                            } catch (IOException e) {
-                                e.printStackTrace();
                             }
                             iter.remove();
                         }
-                        selectedKeys.clear();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                     TaskData taskData = resultQueue.poll();
                     while(taskData != null) {
